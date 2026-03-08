@@ -9,9 +9,29 @@ pipeline {
 
     stages {
 
-        stage('Clone Repository') {
+        stage('Checkout Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/Bibek-2024/Trend.git'
+                checkout scm
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                sh '''
+                if [ -f package.json ]; then
+                    npm install
+                fi
+                '''
+            }
+        }
+
+        stage('Build React App') {
+            steps {
+                sh '''
+                if [ -f package.json ]; then
+                    npm run build
+                fi
+                '''
             }
         }
 
@@ -25,7 +45,11 @@ pipeline {
 
         stage('DockerHub Login') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
                     sh '''
                     echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
                     '''
@@ -43,7 +67,6 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
-
                 withCredentials([[
                     $class: 'AmazonWebServicesCredentialsBinding',
                     credentialsId: 'aws-eks'
@@ -51,13 +74,30 @@ pipeline {
 
                     sh '''
                     aws eks --region $AWS_REGION update-kubeconfig --name $EKS_CLUSTER
+
                     kubectl apply -f deployment.yaml
                     kubectl apply -f service.yaml
+
+                    kubectl rollout status deployment/trend-app-deployment
                     '''
                 }
             }
         }
 
+        stage('Verify Deployment') {
+            steps {
+                sh '''
+                kubectl get pods
+                kubectl get svc
+                '''
+            }
+        }
+
     }
 
+    post {
+        always {
+            sh 'docker system prune -f'
+        }
+    }
 }
