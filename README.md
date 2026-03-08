@@ -1,3 +1,7 @@
+================================================
+Hello This is Bibek, I am trying to create this mini project for testing.
+================================================
+
 DevOps Practice Project – Dist Directory
 
 This repository contains the production-ready build files (dist folder) for DevOps practice and deployment exercises.

@@ -1,0 +1,40 @@
+# ==========================
+# System Files
+# ==========================
+.DS_Store
+Thumbs.db
+
+# ==========================
+# Editor / IDE
+# ==========================
+.vscode/
+.idea/
+
+# ==========================
+# OS files
+# ==========================
+*.log
+
+# ==========================
+# Kubernetes temp files
+# ==========================
+*.tmp
+
+# ==========================
+# Terraform files (if used later)
+# ==========================
+.terraform/
+*.tfstate
+*.tfstate.backup
+
+# ==========================
+# Node related (if source added later)
+# ==========================
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# ==========================
+# Jenkins workspace temp
+# ==========================
+workspace/
