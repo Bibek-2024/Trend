@@ -1,0 +1,19 @@
+apiVersion: v1
+data:
+  mapRoles: |
+    - rolearn: arn:aws:iam::845561723983:role/eksctl-trend-cluster-nodegroup-ng--NodeInstanceRole-gQap5fYZtUwj
+      username: system:node:{{EC2PrivateDNSName}}
+      groups:
+        - system:bootstrappers
+        - system:nodes
+
+  mapUsers: |
+    - userarn: arn:aws:iam::845561723983:user/jenkins-user
+      username: jenkins
+      groups:
+        - system:masters
+
+kind: ConfigMap
+metadata:
+  name: aws-auth
+  namespace: kube-system
