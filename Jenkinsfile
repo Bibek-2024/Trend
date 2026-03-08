@@ -1,49 +1,60 @@
 pipeline {
-
     agent any
 
     environment {
-        DOCKERHUB_USER = "bibekdec2022"
-        IMAGE_NAME = "trend-app"
+        IMAGE_NAME = "bibekdec2022/trend-app"
+        AWS_REGION = "ap-south-1"
+        EKS_CLUSTER = "trend-cluster"
     }
 
     stages {
 
         stage('Clone Repository') {
             steps {
-                git branch: 'main',
-                url: 'https://github.com/Bibek-2024/Trend.git'
+                git branch: 'main', url: 'https://github.com/Bibek-2024/Trend.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $DOCKERHUB_USER/$IMAGE_NAME:latest .'
+                sh '''
+                docker build -t $IMAGE_NAME:latest .
+                '''
             }
         }
 
         stage('DockerHub Login') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds',
-                usernameVariable: 'DOCKER_USER',
-                passwordVariable: 'DOCKER_PASS')]) {
-
-                sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                    '''
                 }
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                sh 'docker push $DOCKERHUB_USER/$IMAGE_NAME:latest'
+                sh '''
+                docker push $IMAGE_NAME:latest
+                '''
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                sh 'kubectl apply -f deployment.yaml'
-                sh 'kubectl apply -f service.yaml'
+
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-eks'
+                ]]) {
+
+                    sh '''
+                    aws eks --region $AWS_REGION update-kubeconfig --name $EKS_CLUSTER
+                    kubectl apply -f deployment.yaml
+                    kubectl apply -f service.yaml
+                    '''
+                }
             }
         }
 
