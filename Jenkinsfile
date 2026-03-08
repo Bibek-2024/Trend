@@ -16,9 +16,31 @@ stages {
         }
     }
 
+    stage('Install Dependencies') {
+        steps {
+            sh '''
+            if [ -f package.json ]; then
+                npm install
+            fi
+            '''
+        }
+    }
+
+    stage('Build React App') {
+        steps {
+            sh '''
+            if [ -f package.json ]; then
+                npm run build
+            fi
+            '''
+        }
+    }
+
     stage('Build Docker Image') {
         steps {
-            sh 'docker build -t $IMAGE_NAME:latest .'
+            sh '''
+            docker build -t $IMAGE_NAME:latest .
+            '''
         }
     }
 
@@ -29,18 +51,22 @@ stages {
                 usernameVariable: 'DOCKER_USER',
                 passwordVariable: 'DOCKER_PASS'
             )]) {
-                sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                sh '''
+                echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                '''
             }
         }
     }
 
     stage('Push Docker Image') {
         steps {
-            sh 'docker push $IMAGE_NAME:latest'
+            sh '''
+            docker push $IMAGE_NAME:latest
+            '''
         }
     }
 
-    stage('Deploy to EKS') {
+    stage('Deploy to Kubernetes') {
         steps {
             withCredentials([[
                 $class: 'AmazonWebServicesCredentialsBinding',
@@ -48,8 +74,10 @@ stages {
             ]]) {
                 sh '''
                 aws eks --region $AWS_REGION update-kubeconfig --name $EKS_CLUSTER
+
                 kubectl apply -f deployment.yaml
                 kubectl apply -f service.yaml
+
                 kubectl rollout status deployment/trend-app-deployment
                 '''
             }
@@ -58,16 +86,10 @@ stages {
 
     stage('Verify Deployment') {
         steps {
-            withCredentials([[
-                $class: 'AmazonWebServicesCredentialsBinding',
-                credentialsId: 'aws-eks'
-            ]]) {
-                sh '''
-                aws eks --region $AWS_REGION update-kubeconfig --name $EKS_CLUSTER
-                kubectl get pods
-                kubectl get svc
-                '''
-            }
+            sh '''
+            kubectl get pods
+            kubectl get svc
+            '''
         }
     }
 
