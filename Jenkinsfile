@@ -18,9 +18,7 @@ stages {
 
     stage('Build Docker Image') {
         steps {
-            sh '''
-            docker build -t $IMAGE_NAME:latest .
-            '''
+            sh 'docker build -t $IMAGE_NAME:latest .'
         }
     }
 
@@ -31,18 +29,14 @@ stages {
                 usernameVariable: 'DOCKER_USER',
                 passwordVariable: 'DOCKER_PASS'
             )]) {
-                sh '''
-                echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                '''
+                sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
             }
         }
     }
 
     stage('Push Docker Image') {
         steps {
-            sh '''
-            docker push $IMAGE_NAME:latest
-            '''
+            sh 'docker push $IMAGE_NAME:latest'
         }
     }
 
@@ -54,10 +48,8 @@ stages {
             ]]) {
                 sh '''
                 aws eks --region $AWS_REGION update-kubeconfig --name $EKS_CLUSTER
-
                 kubectl apply -f deployment.yaml
                 kubectl apply -f service.yaml
-
                 kubectl rollout status deployment/trend-app-deployment
                 '''
             }
@@ -72,7 +64,6 @@ stages {
             ]]) {
                 sh '''
                 aws eks --region $AWS_REGION update-kubeconfig --name $EKS_CLUSTER
-
                 kubectl get pods
                 kubectl get svc
                 '''
